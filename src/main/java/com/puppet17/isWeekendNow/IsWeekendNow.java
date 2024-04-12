@@ -16,6 +16,8 @@ import java.time.temporal.TemporalAdjusters;
  */
 public class IsWeekendNow {
 
+    private static final String BASE_URL = "your_bark_server_url";
+
     /**
      * The entry point of application.
      *
@@ -100,11 +102,10 @@ public class IsWeekendNow {
 
     private static void sendToBark(String message) {
         try {
-            String baseURL = "http://117.72.16.190/PvVHpAR8Zm7yfoQxisDeYC/";
             String encodedMessage = URLEncoder.encode(message, "UTF-8");
             String sound = "paymentsuccess";
             String group = "work";
-            String finalUrl = String.format("%s%s?sound=%s&group=%s", baseURL, encodedMessage, sound, group);
+            String finalUrl = String.format("%s%s?sound=%s&group=%s", BASE_URL, encodedMessage, sound, group);
 
             URL url = new URL(finalUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
