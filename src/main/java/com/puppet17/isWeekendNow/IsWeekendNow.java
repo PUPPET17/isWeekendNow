@@ -18,7 +18,7 @@ import java.util.logging.Logger;
  */
 public class IsWeekendNow {
 
-    private static final String BASE_URL = "your_bark_server_url";
+    private static final String BASE_URL = "https://api.day.app/MFK8h2kU2n7vn4JBhxkZrW/";
     private static final Logger LOGGER = Logger.getLogger(IsWeekendNow.class.getName());
     private static final int LUNCH_BREAK_MINUTES = 90;
 
