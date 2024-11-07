@@ -18,7 +18,7 @@ import java.util.logging.Logger;
  */
 public class IsWeekendNow {
 
-    private static final String BASE_URL = "your_bark_server_url";
+    private static final String BASE_URL = "https://api.day.app/MFK8h2kU2n7vn4JBhxkZrW/";
     private static final Logger LOGGER = Logger.getLogger(IsWeekendNow.class.getName());
     private static final int LUNCH_BREAK_MINUTES = 90;
 
@@ -31,6 +31,8 @@ public class IsWeekendNow {
     public static final LocalTime END_OF_WORK_WEEK = LocalTime.of(19, 0);
 
     public static final LocalTime WORK_END_TIME = LocalTime.of(19, 0);
+
+    public static final String ICON_URL = "https://s3.bmp.ovh/imgs/2024/11/07/01bdf18daa5b5d9c.jpg";
 
     /**
      * The entry point of application.
@@ -100,7 +102,8 @@ public class IsWeekendNow {
             String encodedMessage = URLEncoder.encode(message, "UTF-8");
             String sound = "paymentsuccess";
             String group = "work";
-            String finalUrl = String.format("%s%s?sound=%s&group=%s", BASE_URL, encodedMessage, sound, group);
+            String finalUrl = String.format("%s%s?sound=%s&group=%s&icon=%s",
+                    BASE_URL, encodedMessage, sound, group, URLEncoder.encode(ICON_URL, "UTF-8"));
 
             URL url = new URL(finalUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -110,9 +113,9 @@ public class IsWeekendNow {
 
             int responseCode = connection.getResponseCode();
             if (responseCode == HttpURLConnection.HTTP_OK) {
-                System.out.println("通知发送成功: HTTP " + responseCode);
+                LOGGER.info("通知发送成功: HTTP " + responseCode);
             } else {
-                System.out.println("通知发送失败: HTTP " + responseCode);
+                LOGGER.warning("通知发送失败: HTTP " + responseCode);
             }
             connection.disconnect();
         } catch (Exception e) {
