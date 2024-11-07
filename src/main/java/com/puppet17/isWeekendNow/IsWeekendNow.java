@@ -8,6 +8,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * The type Is weekend now.
@@ -17,6 +19,18 @@ import java.time.temporal.TemporalAdjusters;
 public class IsWeekendNow {
 
     private static final String BASE_URL = "your_bark_server_url";
+    private static final Logger LOGGER = Logger.getLogger(IsWeekendNow.class.getName());
+    private static final int LUNCH_BREAK_MINUTES = 90;
+
+    // 工作周开始时间（05:00）
+    public static final LocalTime START_OF_WORK_WEEK = LocalTime.of(5, 0);
+
+    public static final  LocalTime WORK_START_TIME = LocalTime.of(8, 0);
+
+    // 工作日结束时间（19:00）
+    public static final LocalTime END_OF_WORK_WEEK = LocalTime.of(19, 0);
+
+    public static final LocalTime WORK_END_TIME = LocalTime.of(19, 0);
 
     /**
      * The entry point of application.
@@ -24,80 +38,61 @@ public class IsWeekendNow {
      * @param args the input arguments
      */
     public static void main(String[] args) {
-        // 工作周开始时间（周一05:00）
-        LocalTime startOfWorkWeek = LocalTime.of(5, 0);
-        // 工作日结束时间（周五19:00）
-        LocalTime endOfWorkWeek = LocalTime.of(19, 0);
-
-        LocalTime workStart = LocalTime.of(8, 0);
-        LocalTime workEnd = LocalTime.of(19, 0);
 
         LocalDateTime nextMonday = LocalDateTime.now()
                 .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                .withHour(startOfWorkWeek.getHour())
-                .withMinute(startOfWorkWeek.getMinute())
+                .withHour(START_OF_WORK_WEEK.getHour())
+                .withMinute(START_OF_WORK_WEEK.getMinute())
                 .withSecond(0)
                 .withNano(0);
         LocalDateTime nextFriday = LocalDateTime.now()
-                .with(TemporalAdjusters.nextOrSame(DayOfWeek.FRIDAY))
-                .withHour(endOfWorkWeek.getHour())
-                .withMinute(endOfWorkWeek.getMinute())
+                .with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY))
+                .withHour(END_OF_WORK_WEEK.getHour())
+                .withMinute(END_OF_WORK_WEEK.getMinute())
                 .withSecond(0)
                 .withNano(0);
 
         LocalDateTime now = LocalDateTime.now();
 
         // 初始化消息
-        String message;
+        StringBuilder messageBuilder = new StringBuilder();
 
         // 在工作时间内，且非周末时，计算今天剩余的工作时间
-        if (now.toLocalTime().isBefore(workEnd) && now.toLocalTime().isAfter(workStart) && now.getDayOfWeek().getValue() <= DayOfWeek.FRIDAY.getValue()) {
-            Duration durationLeftToday = Duration.between(now.toLocalTime(), workEnd);
+        if (now.toLocalTime().isBefore(WORK_END_TIME) && now.toLocalTime().isAfter(WORK_START_TIME) && now.getDayOfWeek().getValue() <= DayOfWeek.FRIDAY.getValue()) {
+            Duration durationLeftToday = Duration.between(now.toLocalTime(), WORK_END_TIME).minusMinutes(LUNCH_BREAK_MINUTES);
             long hoursLeftToday = durationLeftToday.toHours();
             long minutesLeftToday = durationLeftToday.minusHours(hoursLeftToday).toMinutes();
-            message = String.format("今天工作时长还剩: %dh%dm", hoursLeftToday, minutesLeftToday);
-            System.out.println(message);
 
-            // 计算剩余工作时长的百分比
-            long totalWorkMinutesToday = Duration.between(workStart, workEnd).toMinutes();
-            long minutesLeftTodayPercent = durationLeftToday.toMinutes();
-            double percentOfDayCompleted = 100 - ((double) minutesLeftTodayPercent / totalWorkMinutesToday * 100);
-            message += String.format(", 已进行: %.2f%%", percentOfDayCompleted);
+            // 今日工作进度
+            messageBuilder.append("📅 本日工作进度:\n")
+                    .append(String.format("  ⏳ 剩余时长: %d小时%d分钟\n", hoursLeftToday, minutesLeftToday));
+
+            long totalWorkMinutesToday = Duration.between(WORK_START_TIME, WORK_END_TIME).toMinutes();
+            double percentOfDayCompleted = 100 - ((double) durationLeftToday.toMinutes() / totalWorkMinutesToday * 100);
+            messageBuilder.append(String.format("  🔄 完成进度: %.2f%%\n", percentOfDayCompleted));
         } else {
-            message = "不是工作时间哦~~";
+            messageBuilder.append("🏖️ 当前不是工作时间哦~~\n");
         }
 
-        // 如果下班后，计算下周的工作时间
-        if (now.isAfter(nextFriday)) {
-            nextMonday = now.with(TemporalAdjusters.next(DayOfWeek.MONDAY))
-                    .withHour(startOfWorkWeek.getHour())
-                    .withMinute(startOfWorkWeek.getMinute())
-                    .withSecond(0)
-                    .withNano(0);
-            nextFriday = nextMonday.with(TemporalAdjusters.next(DayOfWeek.FRIDAY))
-                    .withHour(endOfWorkWeek.getHour())
-                    .withMinute(endOfWorkWeek.getMinute())
-                    .withSecond(0)
-                    .withNano(0);
-        }
+        // 计算本周工作时间进度
+        messageBuilder.append("\n📅 本周工作进度:\n");
 
-        // 计算本周剩余工作时间
         long totalWorkMinutesThisWeek = Duration.between(nextMonday, nextFriday).toMinutes();
         long minutesWorkedSoFarThisWeek = now.isAfter(nextMonday) ? Duration.between(nextMonday, now).toMinutes() : 0;
         double percentOfWorkWeekCompleted = totalWorkMinutesThisWeek > 0 ? (double) minutesWorkedSoFarThisWeek / totalWorkMinutesThisWeek * 100 : 0;
-        message += String.format(", 本周已进行: %.3f%%", percentOfWorkWeekCompleted);
-
         // 计算到周末的剩余时间
         if (!(now.getDayOfWeek() == DayOfWeek.SATURDAY || now.getDayOfWeek() == DayOfWeek.SUNDAY)) {
             Duration untilWeekend = Duration.between(now, nextFriday);
             long hoursUntilWeekend = untilWeekend.toHours();
             long minutesUntilWeekend = untilWeekend.minusHours(hoursUntilWeekend).toMinutes();
-            message += String.format(", 本周时长还剩: %dh%dm", hoursUntilWeekend, minutesUntilWeekend);
+
+            messageBuilder.append(String.format("  ⏳ 剩余时长: %d小时%d分钟\n", hoursUntilWeekend, minutesUntilWeekend));
         }
+        messageBuilder.append(String.format("  🔄 完成进度: %.2f%%\n", percentOfWorkWeekCompleted));
 
         // 推送至Bark
-        sendToBark(message);
-        System.out.println(message);
+        sendToBark(messageBuilder.toString());
+        LOGGER.info("推送消息: " + messageBuilder);
     }
 
     private static void sendToBark(String message) {
@@ -121,8 +116,7 @@ public class IsWeekendNow {
             }
             connection.disconnect();
         } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("通知发送异常");
+            LOGGER.log(Level.SEVERE, "发送通知时发生错误", e);
         }
     }
 }
